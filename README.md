@@ -2,5 +2,5 @@
 
 ### Group Members:
   - Antony Ren
-  - Chun Ho Cheng
+  - Matthew Parsons
   - Charles Yan

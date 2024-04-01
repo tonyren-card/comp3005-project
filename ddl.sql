@@ -5,19 +5,19 @@ CREATE TABLE Users (
 	Email VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE Member (
+CREATE TABLE Members (
 	MemberID INTEGER PRIMARY KEY,
 	RegisterDate DATE,
 	CONSTRAINT fk_user FOREIGN KEY (MemberID) REFERENCES Users(UserID)
 );
 
-CREATE TABLE Trainer (
+CREATE TABLE Trainers (
 	TrainerID INTEGER PRIMARY KEY,
 	Specialization VARCHAR(255) NOT NULL,
 	CONSTRAINT fk_user FOREIGN KEY (TrainerID) REFERENCES Users(UserID)
 );
 
-CREATE TABLE Admin (
+CREATE TABLE Admins (
 	AdminID INTEGER PRIMARY KEY,
 	Title VARCHAR(100) NOT NULL,
 	CONSTRAINT fk_user FOREIGN KEY (AdminID) REFERENCES Users(UserID)
@@ -32,8 +32,8 @@ CREATE TABLE Bill (
 	BillDate Date NOT NULL,
 	Amount NUMERIC,
 	Status bill_status NOT NULL,
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID),
-	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admin(AdminID)
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
+	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admins(AdminID)
 );
 
 CREATE TABLE Room (
@@ -50,14 +50,14 @@ CREATE TABLE FitnessClass (
 	TrainerID INTEGER NOT NULL,
 	RoomID INTEGER NOT NULL,
 	Status class_status NOT NULL,
-	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainer(TrainerID),
+	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainers(TrainerID),
 	CONSTRAINT fk_room FOREIGN KEY (RoomID) REFERENCES Room(RoomID)
 );
 
 CREATE TABLE ClassRegistered (
 	MemberID INTEGER NOT NULL,
 	ClassID INTEGER NOT NULL,
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID),
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
 	CONSTRAINT fk_class FOREIGN KEY (ClassID) REFERENCES FitnessClass(ClassID)
 );
 
@@ -68,8 +68,8 @@ CREATE TABLE PersonalTrainingSession (
 	MemberID INTEGER NOT NULL,
 	TrainerID INTEGER NOT NULL,
 	Status personal_training_status NOT NULL,
-	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainer(TrainerID),
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID)
+	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainers(TrainerID),
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
 );
 
 CREATE TYPE goal_status AS ENUM ('IN PROGRESS', 'FULFILLED', 'CANCELED');
@@ -81,7 +81,7 @@ CREATE TABLE FitnessGoal (
 	EndDate Date,
 	TargetWeight INTEGER NOT NULL,
 	Status goal_status NOT NULL,
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID)
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
 );
 
 CREATE TABLE Routine (
@@ -89,7 +89,7 @@ CREATE TABLE Routine (
 	MemberID INTEGER NOT NULL,
 	Reps INTEGER NOT NULL,
 	Sets INTEGER NOT NULL,
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID)
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
 );
 
 CREATE TABLE FitnessAchievement (
@@ -97,7 +97,7 @@ CREATE TABLE FitnessAchievement (
 	MemberID INTEGER NOT NULL,
 	Description VARCHAR(255) NOT NULL,
 	DateAchieved DATE NOT NULL,
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID)
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
 );
 
 CREATE TABLE HealthMetrics (
@@ -106,7 +106,7 @@ CREATE TABLE HealthMetrics (
 	Weight INTEGER NOT NULL,
 	Height INTEGER NOT NULL,
 	RecordDate Date NOT NULL,
-	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Member(MemberID)
+	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
 );
 
 CREATE TYPE day_of_week AS ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday');
@@ -122,7 +122,7 @@ CREATE TABLE Schedule (
 CREATE TABLE ManageSchedule (
 	AdminID INTEGER NOT NULL,
 	ScheduleID INTEGER NOT NULL,
-	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admin(AdminID),
+	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admins(AdminID),
 	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID)
 );
 
@@ -130,7 +130,7 @@ CREATE TABLE HasSchedule (
 	ScheduleID INTEGER NOT NULL,
 	TrainerID INTEGER NOT NULL,
 	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID),
-	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainer(TrainerID)
+	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainers(TrainerID)
 );
 
 CREATE TABLE TimeSlot (
@@ -158,6 +158,6 @@ CREATE TABLE Equipment (
 CREATE TABLE EquipManaged (
 	AdminID INTEGER NOT NULL,
 	EquipID INTEGER NOT NULL,
-	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admin(AdminID),
+	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admins(AdminID),
 	CONSTRAINT fk_equip FOREIGN KEY (EquipID) REFERENCES Equipment(EquipmentID)
 );

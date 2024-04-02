@@ -128,26 +128,12 @@ CREATE TABLE ManageSchedule (
 	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID)
 );
 
-CREATE TABLE HasSchedule (
-	ScheduleID INTEGER NOT NULL,
-	TrainerID INTEGER NOT NULL,
-	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID),
-	CONSTRAINT fk_trainer FOREIGN KEY (TrainerID) REFERENCES Trainers(TrainerID)
-);
-
 CREATE TABLE TimeSlot (
 	SlotID SERIAL PRIMARY KEY,
 	ScheduleID INTEGER NOT NULL,
 	StartTime TIME NOT NULL,
 	EndTime TIME NOT NULL,
 	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID)
-);
-
-CREATE TABLE RoomScheduled (
-	ScheduleID INTEGER NOT NULL,
-	RoomID INTEGER NOT NULL,
-	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID),
-	CONSTRAINT fk_room FOREIGN KEY (RoomID) REFERENCES Room(RoomID)
 );
 
 CREATE TABLE Equipment (

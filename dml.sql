@@ -95,4 +95,15 @@ VALUES (4,1),
 (5,2),
 (6,3);
 
--- INSERT INTO 
+INSERT INTO Schedule(EntityID,EntityType,DayOfWeek)
+VALUES (3,'Room','Monday'),
+(7,'Trainer','Tuesday'),
+(2,'Class','Wednesday'),
+(1,'Session','Thursday');
+
+-- Adminid, scheduleid
+INSERT INTO Manageschedule
+VALUES (4,1),
+(5,2),
+(6,3),
+(4,4);

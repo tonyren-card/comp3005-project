@@ -63,6 +63,9 @@ public class DatabaseManager {
                     case 3:
                         dashboardDisplay();
                         break;
+                    case 4:
+                        scheduleManagement();
+                        break;
                     case 5:
                         continueRunning = false;
                         break;
@@ -311,6 +314,8 @@ public class DatabaseManager {
                     int select = scanner.nextInt();
                     scanner.nextLine();
 
+                    //TODO: add pause and require user input before redisplaying menu options
+
                     switch (select) {
                         case 1:
                             routineDisplay(email, password);
@@ -342,11 +347,81 @@ public class DatabaseManager {
     }
 
     public void routineDisplay(String email, String password) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM Users WHERE Email = ? AND Password = ?");;
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, password);
 
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                int userId = resultSet.getInt("UserId");
+
+                preparedStatement = connection.prepareStatement("SELECT * FROM Routine WHERE MemberID = ?");
+                preparedStatement.setInt(1, userId);
+                resultSet = preparedStatement.executeQuery();
+
+                System.out.println("Routines:");
+
+                while (resultSet.next()) {
+                    String category = resultSet.getString("Category");
+                    int reps = resultSet.getInt("Reps");
+                    int sets = resultSet.getInt("Sets");
+
+                    System.out.println("Category: " + category);
+                    System.out.println("Reps: " + reps);
+                    System.out.println("Sets: " + sets);
+                }
+
+            } else {
+                System.out.println("No routines found.");
+            }
+
+            // Close result set and prepared statement
+            resultSet.close();
+            preparedStatement.close();
+
+        } catch (SQLException e) {
+            System.out.println("SQL Exception: " + e.getMessage());
+        }
     }
 
     public void achievementDisplay(String email, String password) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM Users WHERE Email = ? AND Password = ?");;
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, password);
 
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                int userId = resultSet.getInt("UserId");
+
+                preparedStatement = connection.prepareStatement("SELECT * FROM FitnessAchievement WHERE MemberID = ?");
+                preparedStatement.setInt(1, userId);
+                resultSet = preparedStatement.executeQuery();
+
+                System.out.println("Achievements:");
+
+                while (resultSet.next()) {
+                    String description = resultSet.getString("Description");
+                    String date = resultSet.getString("DateAchieved");
+
+                    System.out.println("Description: " + description);
+                    System.out.println("Date Achieved: " + date);
+                }
+
+            } else {
+                System.out.println("No achievements found.");
+            }
+
+            // Close result set and prepared statement
+            resultSet.close();
+            preparedStatement.close();
+
+        } catch (SQLException e) {
+            System.out.println("SQL Exception: " + e.getMessage());
+        }
     }
 
     public void statisticDisplay(String email, String password) {

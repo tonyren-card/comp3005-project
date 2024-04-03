@@ -4,6 +4,16 @@
   <groupId>org.example</groupId>
   <artifactId>3005ProjectIntellij</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>Archetype - Comp3005Project</name>
+  <name>Archetype - 3005ProjectIntellij</name>
   <url>http://maven.apache.org</url>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.2</version>
+    </dependency>
+
+  </dependencies>
 </project>

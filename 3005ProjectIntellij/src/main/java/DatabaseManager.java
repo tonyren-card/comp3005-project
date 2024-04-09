@@ -1,8 +1,4 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Scanner;
 
 public class DatabaseManager {
@@ -11,6 +7,8 @@ public class DatabaseManager {
     private String user = "postgres";
     private String pw = "cs19DB22sql!";
     private Connection connection;
+
+    private int dbAdminID = 0;
 
     public DatabaseManager() {
         try {
@@ -78,6 +76,85 @@ public class DatabaseManager {
         }
     }
 
+    public void adminFunctionManager() {
+        try {
+            Scanner scanner = new Scanner(System.in);
+
+            // Get admin login
+            System.out.println("Enter the email:");
+            String email = scanner.nextLine();
+            System.out.println("Enter the password:");
+            String pw = scanner.nextLine();
+            System.out.println();
+
+            // Prepare SQL statement
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                                                            "FROM Admins JOIN Users ON Admins.adminid = Users.userid\n" +
+                                                            "WHERE Users.email = ? AND Users.password = ?;");
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, pw);
+
+            // Execute SQL statement
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            // Check if anything returned
+            if (resultSet.next()) {
+                this.dbAdminID = resultSet.getInt("AdminID");
+
+                String firstName = resultSet.getString("FirstName");
+                String lastName = resultSet.getString("LastName");
+                String userEmail = resultSet.getString("Email");
+
+                System.out.println("User Info:");
+                System.out.println("First Name: " + firstName);
+                System.out.println("Last Name: " + lastName);
+                System.out.println("Email: " + userEmail);
+                System.out.println();
+
+                int select;
+
+                do {
+                    System.out.println("\nSelect an option (type a number for selection):");
+                    System.out.println("\t1: Room Booking Management");
+                    System.out.println("\t2: Equipment Maintenance Monitoring");
+                    System.out.println("\t3: Class Schedule Updating");
+                    System.out.println("\t4: Billing and Payment Processing");
+                    System.out.println("\t5: Exit");
+
+                    select = scanner.nextInt();
+                    scanner.nextLine();
+
+                    switch (select) {
+                        case 1:
+                            roomBookingManagement();
+                            break;
+                        case 2:
+                            break;
+                        case 3:
+                            break;
+                        case 4:
+                            break;
+                        case 5:
+                            break;
+                        default:
+                            System.out.println("Invalid option");
+                    }
+                } while (select != 5);
+            } else {
+                System.out.println("Incorrect email and/or password.");
+            }
+
+            // Close result set and prepared statement
+            resultSet.close();
+            preparedStatement.close();
+
+        } catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+
+    // MEMBER FUNCTIONS
     public void userRegistration() {
         try {
             Scanner scanner = new Scanner(System.in);
@@ -464,4 +541,411 @@ public class DatabaseManager {
 //            System.out.println("Email: " + userEmail);
 //            System.out.println("Password: " + userPassword);
 //        }
+
+    // ADMIN FUNCTIONS
+    // Room booking management manager and action functions
+    public void roomBookingManagement(){
+        Scanner scanner = new Scanner(System.in);
+        int select;
+        do {
+            System.out.println("\nRoom Booking Management - select an option:");
+            System.out.println("\t1: Make a new booking");
+            System.out.println("\t2: Modify an existing reservation");
+            System.out.println("\t3: Delete a reservation");
+            System.out.println("\t4: Exit");
+
+            select = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (select){
+                case 1:
+                    bookNewRoom();
+                    break;
+                case 2:
+                    modifyRoomBooking();
+                    break;
+                case 3:
+                    deleteRoomBooking();
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        }while (select != 4);
+    }
+
+    public void bookNewRoom(){
+        //tables needed: Schedule, ManageSchedule, Timeslot, Room
+        Scanner scanner = new Scanner(System.in);
+
+        // variables to insert new data
+        int scheduleID; // can be existing or new
+        int roomID; // only existing
+        String dayOfWeek;
+        String startTime;
+        String endTime;
+
+        // USER PROMPTS
+        // Step 1: Output rooms available on database and get user input
+        try {
+            ResultSet resultSet;
+            Statement statement = connection.createStatement();
+            statement.executeQuery("SELECT * FROM Room;");
+            resultSet = statement.getResultSet();
+
+            System.out.println("Select the room to reserve (enter the id, in #):");
+            while (resultSet.next()) {
+                System.out.print("ID=" + resultSet.getInt("roomID") + "\t");
+                System.out.print(resultSet.getString("roomName") + "\t");
+                System.out.println("(Capacity: " + resultSet.getInt("capacity") + ")");
+            }
+        }catch(Exception e){
+            System.out.println(e);
+        }
+        roomID = scanner.nextInt();
+        scanner.nextLine();
+
+        // Step 2: List existing bookings by roomID to avoid overbooking
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                    "FROM (Schedule NATURAL INNER JOIN Timeslot), Room\n" +
+                    "WHERE Schedule.entitytype = 'Room' \n" +
+                    "\tAND Schedule.EntityID = Room.RoomID\n" +
+                    "\tAND Room.RoomID = ?;");
+            preparedStatement.setInt(1,roomID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            System.out.println("Existing reservations for RoomID=" + roomID + ":");
+            if (!resultSet.next()) {
+                System.out.println("No existing reservations.");
+            }else {
+                do {
+                    System.out.print("\t");
+                    System.out.print(resultSet.getString("dayofweek") + "\t");
+                    System.out.print(resultSet.getString("StartTime") + " - ");
+                    System.out.println(resultSet.getString("EndTime"));
+                } while (resultSet.next());
+            }
+        }catch (Exception e) {
+            System.out.println(e);
+        }
+
+        // Step 3: User inputs for the reservation
+        System.out.println("\nEnter the day of the week (eg. 'Monday'):");
+        dayOfWeek = scanner.nextLine();
+        System.out.println("Enter the start time of the time slot, in 24-hour format (eg. '13:00'):");
+        startTime = scanner.nextLine();
+        System.out.println("Enter the end time of the time slot, in 24-hour format (eg. '13:00'), later than the start time:");
+        endTime = scanner.nextLine();
+
+        // Step 4: prepare and execute the queries
+        try {
+            // See if there is an existing scheduleid from Schedule
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * " +
+                                                                                    "FROM Schedule " +
+                                                                            "WHERE EntityID = ? AND EntityType = 'Room' AND DayOfWeek = ?::day_of_week;");
+            preparedStatement.setInt(1,roomID);
+            preparedStatement.setString(2,dayOfWeek);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            // if inserting is needed
+            if (!resultSet.next()) {
+                preparedStatement = connection.prepareStatement("INSERT INTO Schedule(EntityID,EntityType,DayOfWeek)\n" +
+                        "VALUES (?,'Room',?::day_of_week);");
+                preparedStatement.setInt(1, roomID);
+                preparedStatement.setString(2, dayOfWeek);
+
+                int rowsAffected = preparedStatement.executeUpdate();
+                if (rowsAffected == 0) {
+                    System.out.println("Failed to add new reservation.");
+                    preparedStatement.close();
+                    return;
+                }
+                preparedStatement = connection.prepareStatement("SELECT * " +
+                        "FROM Schedule " +
+                        "WHERE EntityID = ? AND EntityType = 'Room' AND DayOfWeek = ?::day_of_week;");
+                preparedStatement.setInt(1, roomID);
+                preparedStatement.setString(2, dayOfWeek);
+
+                resultSet = preparedStatement.executeQuery();
+                resultSet.next();
+            }
+            scheduleID = resultSet.getInt("ScheduleID");
+
+            // insert into Timeslot
+            preparedStatement = connection.prepareStatement("INSERT INTO TimeSlot(ScheduleID,StartTime,EndTime)\n" +
+                                                                "VALUES (?,?,?)");
+            preparedStatement.setInt(1, scheduleID);
+            preparedStatement.setTime(2, Time.valueOf(startTime + ":00"));
+            preparedStatement.setTime(3, Time.valueOf(endTime + ":00"));
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully added new reservation.");
+            }else{
+                System.out.println("Failed to add new reservation.");
+                preparedStatement.close();
+                return;
+            }
+
+            // insert into Manageschedule (where if not already)
+            preparedStatement = connection.prepareStatement("INSERT INTO Manageschedule\n" +
+                    "SELECT ?, ?\n" +
+                    "WHERE NOT EXISTS(SELECT * FROM Manageschedule WHERE Adminid=? AND Scheduleid=?);");
+            preparedStatement.setInt(1, this.dbAdminID);
+            preparedStatement.setInt(2, scheduleID);
+            preparedStatement.setInt(3, this.dbAdminID);
+            preparedStatement.setInt(4, scheduleID);
+
+            preparedStatement.executeUpdate();
+
+            // Close prepared statement
+            preparedStatement.close();
+
+        }catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    public void modifyRoomBooking(){
+        //tables needed: ManageSchedule, Schedule, Room, Timeslot
+        Scanner scanner = new Scanner(System.in);
+
+        int slotID;
+        int roomID;
+        int scheduleID;
+        String dayOfWeek;
+        String startTime;
+        String endTime;
+
+        // USER PROMPTS
+        //Step 1: List existing reservations where admin has access
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                    "FROM ((Manageschedule NATURAL INNER JOIN Schedule) NATURAL INNER JOIN Timeslot), Room\n" +
+                    "WHERE Adminid=? \n" +
+                    "\tAND Entitytype='Room' \n" +
+                    "\tAND Schedule.entityid = Room.roomid;");
+            preparedStatement.setInt(1, this.dbAdminID);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            System.out.println("Existing reservations under this admin:");
+            if (!resultSet.next()) {
+                System.out.println("No existing reservations.");
+                return;
+            }else {
+                do {
+                    System.out.print("ID=" + resultSet.getInt("SlotID") + "\t");
+                    System.out.print(resultSet.getString("RoomName") + "\t");
+                    System.out.print(resultSet.getString("DayOfWeek") + " ");
+                    System.out.print(resultSet.getString("StartTime") + " - ");
+                    System.out.println(resultSet.getString("EndTime"));
+                } while (resultSet.next());
+            }
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+        System.out.println("\nEnter the ID of the existing reservation:");
+        slotID = scanner.nextInt();
+        scanner.nextLine();
+
+        // Step 2: Select the room
+        try {
+            ResultSet resultSet;
+            Statement statement = connection.createStatement();
+            statement.executeQuery("SELECT * FROM Room;");
+            resultSet = statement.getResultSet();
+
+            System.out.println("Select the room to update to (or keep):");
+            while (resultSet.next()) {
+                System.out.print("ID=" + resultSet.getInt("roomID") + "\t");
+                System.out.print(resultSet.getString("roomName") + "\t");
+                System.out.println("(Capacity: " + resultSet.getInt("capacity") + ")");
+            }
+        }catch(Exception e){
+            System.out.println(e);
+        }
+        roomID = scanner.nextInt();
+        scanner.nextLine();
+
+        //Step 3: List existing reservations by roomID and provide user inputs
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                    "FROM Schedule NATURAL INNER JOIN Timeslot\n" +
+                    "WHERE Schedule.entitytype = 'Room' \n" +
+                    "\tAND Schedule.EntityID = ?;");
+            preparedStatement.setInt(1,roomID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            System.out.println("Existing reservations for RoomID=" + roomID + ":");
+            if (!resultSet.next()) {
+                System.out.println("No existing reservations.");
+            }else {
+                do {
+                    System.out.print("\t");
+                    System.out.print(resultSet.getString("dayofweek") + "\t");
+                    System.out.print(resultSet.getString("StartTime") + " - ");
+                    System.out.println(resultSet.getString("EndTime"));
+                } while (resultSet.next());
+            }
+            preparedStatement.close();
+        }catch (Exception e) {
+            System.out.println(e);
+        }
+
+        System.out.println("\nEnter the day of the week (eg. 'Monday'):");
+        dayOfWeek = scanner.nextLine();
+        System.out.println("Enter the start time of the time slot, in 24-hour format (eg. '13:00'):");
+        startTime = scanner.nextLine();
+        System.out.println("Enter the end time of the time slot, in 24-hour format (eg. '13:00'), later than the start time:");
+        endTime = scanner.nextLine();
+
+        // Step 4: prepare modify queries and execute accordingly
+        try {
+            // See if there is an existing scheduleid from Schedule
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * " +
+                    "FROM Schedule " +
+                    "WHERE EntityID = ? AND EntityType = 'Room' AND DayOfWeek = ?::day_of_week;");
+            preparedStatement.setInt(1,roomID);
+            preparedStatement.setString(2,dayOfWeek);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            // if inserting is needed
+            if (!resultSet.next()) {
+                preparedStatement = connection.prepareStatement("INSERT INTO Schedule(EntityID,EntityType,DayOfWeek)\n" +
+                        "VALUES (?,'Room',?::day_of_week);");
+                preparedStatement.setInt(1, roomID);
+                preparedStatement.setString(2, dayOfWeek);
+
+                int rowsAffected = preparedStatement.executeUpdate();
+                if (rowsAffected == 0) {
+                    System.out.println("Failed to add new reservation.");
+                    preparedStatement.close();
+                    return;
+                }
+
+
+                preparedStatement.executeUpdate();
+                preparedStatement = connection.prepareStatement("SELECT * " +
+                        "FROM Schedule " +
+                        "WHERE EntityID = ? AND EntityType = 'Room' AND DayOfWeek = ?::day_of_week;");
+                preparedStatement.setInt(1, roomID);
+                preparedStatement.setString(2, dayOfWeek);
+
+                resultSet = preparedStatement.executeQuery();
+                resultSet.next();
+            }
+            scheduleID = resultSet.getInt("ScheduleID");
+
+            // insert into Manageschedule (if not exists)
+            preparedStatement = connection.prepareStatement("INSERT INTO Manageschedule\n" +
+                    "SELECT ?, ?\n" +
+                    "WHERE NOT EXISTS(SELECT * FROM Manageschedule WHERE Adminid=? AND Scheduleid=?);");
+            preparedStatement.setInt(1, this.dbAdminID);
+            preparedStatement.setInt(2, scheduleID);
+            preparedStatement.setInt(3, this.dbAdminID);
+            preparedStatement.setInt(4, scheduleID);
+
+            preparedStatement.executeUpdate();
+
+            // update Timeslot
+            preparedStatement = connection.prepareStatement("UPDATE Timeslot\n" +
+                                                                "SET ScheduleID=?,\n" +
+                                                                    "\tStartTime=?,\n" +
+                                                                    "\tEndTime=?\n" +
+                                                                "WHERE slotid=?;");
+            preparedStatement.setInt(1, scheduleID);
+            preparedStatement.setTime(2, Time.valueOf(startTime + ":00"));
+            preparedStatement.setTime(3, Time.valueOf(endTime + ":00"));
+            preparedStatement.setInt(4, slotID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully updated the reservation.");
+            }else{
+                System.out.println("Failed to update the reservation.");
+            }
+
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void deleteRoomBooking(){
+        //tables needed: ManageSchedule, Schedule, Room, Timeslot
+        Scanner scanner = new Scanner(System.in);
+
+        int slotID;
+
+        // USER PROMPTS
+        //Step 1: List existing reservations where admin has access
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                    "FROM ((Manageschedule NATURAL INNER JOIN Schedule) NATURAL INNER JOIN Timeslot), Room\n" +
+                    "WHERE Adminid=? \n" +
+                    "\tAND Entitytype='Room' \n" +
+                    "\tAND Schedule.entityid = Room.roomid;");
+            preparedStatement.setInt(1, this.dbAdminID);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            System.out.println("Existing reservations under this admin:");
+            if (!resultSet.next()) {
+                System.out.println("No existing reservations.");
+                preparedStatement.close();
+                return;
+            }else {
+                do {
+                    System.out.print("ID=" + resultSet.getInt("SlotID") + "\t");
+                    System.out.print(resultSet.getString("RoomName") + "\t");
+                    System.out.print(resultSet.getString("DayOfWeek") + " ");
+                    System.out.print(resultSet.getString("StartTime") + " - ");
+                    System.out.println(resultSet.getString("EndTime"));
+                } while (resultSet.next());
+            }
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+        System.out.println("\nEnter the ID of the existing reservation:");
+        slotID = scanner.nextInt();
+        scanner.nextLine();
+
+        // Step 2: delete the data
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM Timeslot\n" +
+                                                                                    "WHERE slotid=?;");
+            preparedStatement.setInt(1, slotID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully deleted the reservation.");
+            }else{
+                System.out.println("Failed to delete the reservation.");
+            }
+
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    // Equipment maintenance
+    public void equipMaintenance(){
+
+    }
+
+    public void updateClassSchedule(){
+
+    }
+
+    public void processBilling(){
+
+    }
 }

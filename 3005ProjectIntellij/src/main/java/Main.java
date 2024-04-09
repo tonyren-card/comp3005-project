@@ -21,12 +21,16 @@ public class Main {
                 case 1:
                     dbManager.memberFunctionManager();
                     break;
+                case 3:
+                    dbManager.adminFunctionManager();
+                    break;
                 case 4:
                     continueRunning = false;
                     break;
                 default:
                     System.out.println("Invalid option.");
             }
+            System.out.println();
         }
 
         dbManager.closeConnection();

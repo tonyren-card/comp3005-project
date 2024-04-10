@@ -100,7 +100,9 @@ VALUES (4,1),
 INSERT INTO Schedule(EntityID,EntityType,DayOfWeek)
 VALUES (3,'Room','Monday'),
 (7,'Trainer','Tuesday'),
-(2,'Class','Wednesday'),
+(1,'Class','Monday'),
+(2,'Class','Tuesday'),
+(3,'Class','Wednesday'),
 (1,'Session','Thursday');
 
 -- Admin to Schedule join table (Adminid, scheduleid)
@@ -114,5 +116,7 @@ VALUES (4,1),
 INSERT INTO TimeSlot(ScheduleID,StartTime,EndTime)
 VALUES (1,'13:00','14:00'),
 (2,'13:00','14:00'),
-(3,'13:00','14:00'),
-(4,'13:00','14:00');
+(3,'8:00','9:00'),
+(4,'9:00','10:00'),
+(5,'13:00','14:00'),
+(6,'13:00','14:00');

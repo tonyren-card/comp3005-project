@@ -129,10 +129,13 @@ public class DatabaseManager {
                             roomBookingManagement();
                             break;
                         case 2:
+                            equipMaintenance();
                             break;
                         case 3:
+                            updateClassSchedule();
                             break;
                         case 4:
+                            processBilling();
                             break;
                         case 5:
                             break;
@@ -936,16 +939,537 @@ public class DatabaseManager {
         }
     }
 
-    // Equipment maintenance
+    // Equipment maintenance manager and action functions
+    // - View, update, insert, delete equipments
     public void equipMaintenance(){
+        Scanner scanner = new Scanner(System.in);
+        int select;
 
+        do {
+            System.out.println("\nList of equipments:");
+            // List equipments maintained - SELECT
+            try {
+                ResultSet resultSet;
+                Statement statement = connection.createStatement();
+                statement.executeQuery("SELECT * FROM Equipment;");
+                resultSet = statement.getResultSet();
+
+                while (resultSet.next()) {
+                    System.out.print("ID=" + resultSet.getInt("EquipmentID"));
+                    System.out.print("\tName:" + resultSet.getString("EquipmentName"));
+                    System.out.print("\t\tPurchased on:" + resultSet.getDate("PurchaseDate"));
+                    System.out.println("\t\tLast maintained:" + resultSet.getDate("LastMaintenanceDate"));
+                }
+                System.out.println();
+            }catch (Exception e){
+                System.out.println(e);
+            }
+            System.out.println("Equipment maintenance - select an option:");
+            System.out.println("\t1: Update maintenance date");
+            System.out.println("\t2: Insert new equipment entry");
+            System.out.println("\t3: Delete equipment entry");
+            System.out.println("\t4: Exit");
+
+            select = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (select) {
+                case 1:
+                    updateMtnceDate();
+                    break;
+                case 2:
+                    insertEquip();
+                    break;
+                case 3:
+                    deleteEquip();
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        } while(select != 4);
     }
 
+    public void updateMtnceDate(){
+        //tables needed: Equipment, EquipManaged
+        Scanner scanner = new Scanner(System.in);
+
+        int equipID;
+        String newDate;
+
+        // Step 1: Select the ID of equipment
+        System.out.print("Enter the ID of the equipment:");
+        equipID = scanner.nextInt();
+        scanner.nextLine();
+
+        // Step 2: Get new date
+        System.out.print("\nEnter the new maintenance date of the equipment, in format 'YYYY-MM-DD':");
+        newDate = scanner.nextLine();
+
+        // Step 3: prepare update queries and execute
+        try {
+            // Update action
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE Equipment\n" +
+                                                                        "SET LastMaintenanceDate=?\n" +
+                                                                        "WHERE EquipmentID=?;");
+            preparedStatement.setDate(1,Date.valueOf(newDate));
+            preparedStatement.setInt(2, equipID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully updated the equipment maintenance date.");
+            }else {
+                System.out.println("Failed to update the maintenance date.");
+            }
+
+            // Add admin to the equipment id if not already
+            preparedStatement = connection.prepareStatement("INSERT INTO EquipManaged\n" +
+                                                                    "SELECT ?, ?\n" +
+                                        "WHERE NOT EXISTS(SELECT * FROM EquipManaged WHERE AdminID=? AND EquipID=?);");
+            preparedStatement.setInt(1, this.dbAdminID);
+            preparedStatement.setInt(2, equipID);
+            preparedStatement.setInt(3, this.dbAdminID);
+            preparedStatement.setInt(4, equipID);
+
+            preparedStatement.executeUpdate();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void insertEquip(){
+        Scanner scanner = new Scanner(System.in);
+
+        String equipName;
+        String purchaseDate;
+        String lastMtceDate;
+
+        // Step 1: Get inputs for name, purchase date, last maintenance date:
+        System.out.print("Enter the equipment name:");
+        equipName = scanner.nextLine();
+        System.out.print("Enter the purchase date in format 'YYYY-MM-DD':");
+        purchaseDate = scanner.nextLine();
+        System.out.print("Enter the last mtce date in format 'YYYY-MM-DD':");
+        lastMtceDate = scanner.nextLine();
+
+        // Step 2: prepare insert statement
+        try {
+            // insert equipment
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Equipment(EquipmentName, PurchaseDate, LastMaintenanceDate)\n" +
+                                                                                "VALUES (?, ?, ?);");
+            preparedStatement.setString(1, equipName);
+            preparedStatement.setDate(2, Date.valueOf(purchaseDate));
+            preparedStatement.setDate(3, Date.valueOf(lastMtceDate));
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully inserted the equipment entry.");
+            }else{
+                System.out.println("Failed to insert the equipment entry.");
+            }
+
+            // assign new equipment id to admin
+            Statement statement = connection.createStatement();
+            statement.executeQuery("SELECT max(equipmentid) FROM Equipment;");
+            ResultSet resultSet = statement.getResultSet();
+            if (resultSet.next()){
+                int newEquipID = resultSet.getInt(1);
+                preparedStatement = connection.prepareStatement("INSERT INTO EquipManaged\n" +
+                                                                    "SELECT ?, ?\n" +
+                                                "WHERE NOT EXISTS(SELECT * FROM EquipManaged WHERE AdminID=? AND EquipID=?);");
+                preparedStatement.setInt(1, this.dbAdminID);
+                preparedStatement.setInt(2, newEquipID);
+                preparedStatement.setInt(3, this.dbAdminID);
+                preparedStatement.setInt(4, newEquipID);
+
+                preparedStatement.executeUpdate();
+            }else{
+                System.out.println("Failed to assign new equipment to admin.");
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void deleteEquip(){
+        // tables needed: Equipment, ManageEquip
+        Scanner scanner = new Scanner(System.in);
+
+        int equipID;
+
+        // Step 1: get user input
+        System.out.print("Enter the ID of the equipment:");
+        equipID = scanner.nextInt();
+
+        // Step 2: prepare delete queries and execute accordingly
+        try {
+            // first delete from equipmanaged
+            PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM EquipManaged WHERE equipid=?;");
+            preparedStatement.setInt(1, equipID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Failed to delete the equipment entry.");
+                preparedStatement.close();
+                return;
+            }
+
+            // delete from equipment
+            preparedStatement = connection.prepareStatement("DELETE FROM Equipment WHERE equipmentid=?;");
+            preparedStatement.setInt(1, equipID);
+
+            rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully deleted the equipment entry.");
+            }else {
+                System.out.println("Failed to delete the equipment entry.");
+                preparedStatement.close();
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    // Class scheduling management manager and actions
+    // - Update a class to a different date and time (assumes the trainer is available)
+    // - Update class status ('OPEN', 'FULL', 'FINISHED')
     public void updateClassSchedule(){
+        // tables needed: schedule, timeslot, fitnessclass, user, room
+        Scanner scanner = new Scanner(System.in);
 
+        int select;
+
+        do {
+            //Step 1: list all available classes and details
+            try {
+                // get column names
+                Statement statement = connection.createStatement();
+                statement.executeQuery(
+                        "SELECT ClassID, ClassName, Status, RoomName, FirstName, LastName, DayOfWeek, StartTime, EndTime\n" +
+                                "FROM ((FitnessClass NATURAL INNER JOIN Room) JOIN Users on FitnessClass.trainerid = Users.userid), \n" +
+                                "\t(Schedule NATURAL INNER JOIN Timeslot)\n" +
+                                "WHERE Schedule.entitytype = 'Class'\n" +
+                                "\tAND FitnessClass.classid = Schedule.entityid;");
+
+                ResultSet resultSet = statement.getResultSet();
+                ResultSetMetaData md = resultSet.getMetaData();
+
+                System.out.println();
+                for (int i = 1; i <= md.getColumnCount(); i++) {
+                    System.out.print(md.getColumnName(i) + "\t\t");
+                }
+                System.out.println("\n");
+
+                while (resultSet.next()) {
+                    System.out.print(resultSet.getInt("ClassID") + "\t\t");
+                    System.out.print(resultSet.getString("ClassName") + "\t\t");
+                    System.out.print(resultSet.getString("Status") + "\t\t");
+                    System.out.print(resultSet.getString("RoomName") + "\t\t");
+                    System.out.print(resultSet.getString("FirstName") + "\t\t");
+                    System.out.print(resultSet.getString("LastName") + "\t\t");
+                    System.out.print(resultSet.getString("DayOfWeek") + "\t\t");
+                    System.out.print(resultSet.getTime("StartTime") + "\t\t");
+                    System.out.print(resultSet.getTime("EndTime") + "\n");
+                }
+
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+
+            //Step 2: get user input for class update
+            System.out.println("\nUpdate class schedule - select an option:");
+            System.out.println("\t1: Update class date");
+            System.out.println("\t2: Update class status");
+            System.out.println("\t3: Exit");
+
+            select = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (select) {
+                case 1:
+                    updateClassDate();
+                    break;
+                case 2:
+                    updateClassStatus();
+                    break;
+                case 3:
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        } while (select != 3);
     }
 
+    public void updateClassDate(){
+        // tables needed: Schedule, timeslot
+        Scanner scanner = new Scanner(System.in);
+
+        int classID;
+        int scheduleID;
+        String dayOfWeek;
+        String startTime;
+        String endTime;
+
+        // Step 1: get class ID and new date inputs
+        System.out.print("Enter the ID of the class: ");
+        classID = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.print("Enter the day of the week (eg. 'Monday'): ");
+        dayOfWeek = scanner.nextLine();
+        System.out.print("Enter the start time: ");
+        startTime = scanner.nextLine();
+        System.out.print("Enter the end time later than start time: ");
+        endTime = scanner.nextLine();
+
+        //Step 2: prepare queries and execute
+        try {
+            // Update day of week for the schedule
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "UPDATE Schedule\n" +
+                            "SET DayOfWeek = ?::day_of_week\n" +
+                            "WHERE EntityType = 'Class'\n" +
+                            "\tAND EntityID = ?;");
+            preparedStatement.setString(1,dayOfWeek);
+            preparedStatement.setInt(2,classID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Failed to update the class date entry.");
+                preparedStatement.close();
+                return;
+            }
+
+            // Get scheduleID for the updated schedule (ie. entityID)
+            preparedStatement = connection.prepareStatement(
+                    "SELECT ScheduleID\n" +
+                            "FROM Schedule\n" +
+                            "WHERE entitytype = 'Class'\n" +
+                            "\tAND EntityID = ?;");
+            preparedStatement.setInt(1,classID);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            scheduleID = resultSet.getInt(1);
+
+            // update Timeslot
+            preparedStatement = connection.prepareStatement(
+                    "UPDATE Timeslot\n" +
+                            "SET StartTime=?,\n" +
+                            "\tEndTime=?\n" +
+                            "WHERE ScheduleID=?;");
+            preparedStatement.setTime(1, Time.valueOf(startTime + ":00"));
+            preparedStatement.setTime(2, Time.valueOf(endTime + ":00"));
+            preparedStatement.setInt(3, scheduleID);
+
+            rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully updated the class schedule.");
+            }else{
+                System.out.println("Failed to update the class schedule.");
+            }
+
+            // insert into Manageschedule (if not exists)
+            preparedStatement = connection.prepareStatement(
+                    "INSERT INTO Manageschedule\n" +
+                    "SELECT ?, ?\n" +
+                    "WHERE NOT EXISTS(SELECT * FROM Manageschedule WHERE Adminid=? AND Scheduleid=?);");
+            preparedStatement.setInt(1, this.dbAdminID);
+            preparedStatement.setInt(2, scheduleID);
+            preparedStatement.setInt(3, this.dbAdminID);
+            preparedStatement.setInt(4, scheduleID);
+
+            preparedStatement.executeUpdate();
+
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void updateClassStatus(){
+        Scanner scanner = new Scanner(System.in);
+
+        int classID;
+        String classStatus="";
+
+        // Step 1: get class ID
+        System.out.print("Enter the ID of the class: ");
+        classID = scanner.nextInt();
+
+        // Step 2: get input for class status ('OPEN', 'FULL', 'FINISHED')
+        boolean isValid;
+        do {
+            System.out.println("Select the status of the class (type a number): ");
+            System.out.println("\t1. Open");
+            System.out.println("\t2. Full");
+            System.out.println("\t3. Finished");
+            int select = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (select) {
+                case 1:
+                    classStatus = "OPEN";
+                    isValid = true;
+                    break;
+                case 2:
+                    classStatus = "FULL";
+                    isValid = true;
+                    break;
+                case 3:
+                    classStatus = "FINISHED";
+                    isValid = true;
+                    break;
+                default:
+                    System.out.println("Invalid option.\n");
+                    isValid = false;
+            }
+        } while (!isValid);
+
+        // Step 3: prepare queries and execute
+        try {
+            // tables needed: FitnessClass
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "UPDATE Fitnessclass\n" +
+                    "SET Status = ?::class_status\n" +
+                    "WHERE Classid = ?;");
+            preparedStatement.setString(1, classStatus);
+            preparedStatement.setInt(2, classID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully updated the class status entry.");
+            }else{
+                System.out.println("Failed to update the class status entry.");
+            }
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    // Billing management manager and action functions
     public void processBilling(){
+        // Add billing, process payment
+        Scanner scanner = new Scanner(System.in);
+        int select;
 
+        do {
+            //Step 1: list all bills on file, assigned only to adminID
+            try {
+                // get column names
+                PreparedStatement preparedStatement = connection.prepareStatement(
+                        "SELECT Billid, Firstname, Lastname, Billdate, Amount, Status\n" +
+                                "FROM Bill JOIN Users on Bill.Memberid = Users.Userid\n" +
+                                "WHERE Adminid = ?;");
+                preparedStatement.setInt(1, this.dbAdminID);
+
+                ResultSet resultSet = preparedStatement.executeQuery();
+                ResultSetMetaData md = resultSet.getMetaData();
+
+                System.out.println();
+                for (int i = 1; i <= md.getColumnCount(); i++) {
+                    System.out.print(md.getColumnName(i) + "\t\t");
+                }
+                System.out.println("\n");
+
+                while (resultSet.next()) {
+                    System.out.print(resultSet.getInt("Billid") + "\t\t\t");
+                    System.out.print(resultSet.getString("Firstname") + "\t\t\t");
+                    System.out.print(resultSet.getString("Lastname") + "\t\t\t");
+                    System.out.print(resultSet.getDate("Billdate") + "\t\t");
+                    System.out.print("$" + resultSet.getInt("Amount") + "\t\t");
+                    System.out.println(resultSet.getString("Status"));
+                }System.out.println();
+
+                preparedStatement.close();
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+
+            //Step 2: get user input for selection - add new bill, update bill amount, change bill status
+            System.out.println("\nBilling and payment processing - select an option:");
+            System.out.println("\t1: Add new bill");
+            System.out.println("\t2: Update bill amount");
+            System.out.println("\t3: Update bill status");
+            System.out.println("\t4: Exit");
+
+            select = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (select) {
+                case 1:
+                    addBill();
+                    break;
+                case 2:
+                    updateBillAmount();
+                    break;
+                case 3:
+                    updateBillStatus();
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        } while (select != 4);
     }
+
+    public void addBill(){
+        Scanner scanner = new Scanner(System.in);
+        int memID;
+        String billDate;
+        int amount;
+
+        //Step 2: list members names' and get input for a member id
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT Memberid, Firstname, Lastname, Email\n" +
+                    "FROM Members JOIN Users on Members.memberid = Users.userid;");
+
+            System.out.println("Enter the ID of the member to generate new bill of: \n");
+            while (resultSet.next()){
+                System.out.print("ID=" + resultSet.getInt("Memberid") + "\t\t");
+                System.out.print(resultSet.getString("Firstname") + " ");
+                System.out.print(resultSet.getString("Lastname") + "\t\t");
+                System.out.println(resultSet.getString("Email"));
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+        memID = scanner.nextInt();
+        scanner.nextLine();
+
+        //Step 3: User inputs for bill date and amount
+        System.out.print("Enter the date for the bill, in format 'YYYY-MM-DD': ");
+        billDate = scanner.nextLine();
+        System.out.print("Enter the amount to be paid: ");
+        amount = scanner.nextInt();
+        scanner.nextLine();
+
+        //Step 4: prepare insert queries and execute
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "INSERT INTO Bill(MemberID, AdminID, BillDate, Amount, Status)\n" +
+                            "VALUES (?,?,?,?,'PENDING');");
+            preparedStatement.setInt(1, memID);
+            preparedStatement.setInt(2, this.dbAdminID);
+            preparedStatement.setDate(3, Date.valueOf(billDate));
+            preparedStatement.setInt(4, amount);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Successfully added the bill entry.");
+            }else{
+                System.out.println("Failed to add the bill entry.");
+            }
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+    public void updateBillAmount(){}
+    public void updateBillStatus(){}
 }

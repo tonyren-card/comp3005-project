@@ -83,6 +83,76 @@ public class DatabaseManager {
         }
     }
 
+    //TRAINER FUNCTION MANAGER
+    public void trainerFunctionManager(){
+        try {
+            Scanner scanner = new Scanner(System.in);
+
+            // Get trainer login
+            System.out.println("Enter the email:");
+            String email = scanner.nextLine();
+            System.out.println("Enter the password:");
+            String pw = scanner.nextLine();
+            System.out.println();
+
+            // Prepare SQL statement
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                    "FROM Trainers JOIN Users ON Trainers.TrainerID = Users.userid\n" +
+                    "WHERE Users.email = ? AND Users.password = ?;");
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, pw);
+
+            // Execute SQL statement
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+
+            if (resultSet.next()) {
+                this.dbTrainerID = resultSet.getInt("TrainerID");
+
+                String firstName = resultSet.getString("FirstName");
+                String lastName = resultSet.getString("LastName");
+                String userEmail = resultSet.getString("Email");
+
+                System.out.println("User Info:");
+                System.out.println("First Name: " + firstName);
+                System.out.println("Last Name: " + lastName);
+                System.out.println("Email: " + userEmail);
+                System.out.println();
+
+                boolean continueRunning = true;
+
+                while (continueRunning) {
+                    System.out.println("Trainer management.");
+                    System.out.println("1. Availability Registration.");
+                    System.out.println("2. Member Search.");
+                    System.out.println("3. Exit.");
+
+                    int select = scanner.nextInt();
+                    scanner.nextLine();
+
+                    switch (select) {
+                        case 1:
+                            scheduleManagement();
+                            break;
+                        case 2:
+                            memberProfileSearch();
+                            break;
+                        case 3:
+                            continueRunning = false;
+                            break;
+                        default:
+                            System.out.println("Invalid option.");
+                    }
+                }
+            }
+            else{
+                System.out.println("invalid username or password");
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+    
     public void adminFunctionManager() {
         try {
             Scanner scanner = new Scanner(System.in);
@@ -2270,4 +2340,181 @@ public class DatabaseManager {
             System.out.println(e);
         }
     }
+
+    //TRAINER FUNCTIONS
+    public void scheduleManagement() {
+        //input requirements
+        //date: first letter must be capitalized, ex: Monday
+        //time: must be in HH:MM format, ex: 14:00
+        try {
+            Scanner scanner = new Scanner(System.in);
+
+            // Get trainer's desired time slot
+            System.out.println("Enter day of session: ");
+            String day = scanner.nextLine();
+            System.out.println("Enter start time: ");
+            String startTime = scanner.nextLine();
+            System.out.println("Enter end time: ");
+            String endTime = scanner.nextLine();
+
+            // Prepare SQL statements
+            //update day of week
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE Schedule\n" +
+                    "SET DayOfWeek= ?::day_of_week\n" +
+                    "WHERE EntityType = 'Trainer'\n" +
+                    "\tAND EntityID = ?;");
+            preparedStatement.setString(1, day);
+            preparedStatement.setInt(2, dbTrainerID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Failed to update the class date entry.");
+                preparedStatement.close();
+                return;
+            }
+
+            //query scheduleID
+            PreparedStatement scheduleQuery = connection.prepareStatement("SELECT * FROM Schedule " +
+                    "WHERE EntityType = 'Trainer' AND EntityID = ?;");
+            scheduleQuery.setInt(1, dbTrainerID);
+
+            ResultSet resultSet = scheduleQuery.executeQuery();
+            resultSet.next();
+            int scheduleID = resultSet.getInt(1);
+
+            //update start and end times
+            preparedStatement = connection.prepareStatement("UPDATE Timeslot\n" +
+                     "SET StartTime= ?\n, EndTime = ?\n" +
+                     "WHERE ScheduleID = ?\n");
+            preparedStatement.setTime(1, Time.valueOf(startTime + ":00"));
+            preparedStatement.setTime(2, Time.valueOf(endTime + ":00"));
+            preparedStatement.setInt(3, scheduleID);
+
+            rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Failed to update the class date entry.");
+                preparedStatement.close();
+                return;
+            }
+
+        }
+        catch (SQLException e) {
+            System.out.println("SQL Exception: " + e.getMessage());
+        }
+
+    }
+
+    public void memberProfileSearch() {
+        try{
+            Scanner scanner = new Scanner(System.in);
+
+            System.out.println("Please enter the first name of the member you wish to find: ");
+            String fName = scanner.nextLine();
+            System.out.println("Enter enter the last name of the member you wish to find: ");
+            String lName = scanner.nextLine();
+
+            //query userID
+            PreparedStatement userID = connection.prepareStatement("SELECT UserID FROM Users JOIN Members ON Users.UserID = Members.MemberID " +
+                    " WHERE FirstName = ? AND LastName = ?; ");
+            userID.setString(1, fName);
+            userID.setString(2, lName);
+
+            // Execute SQL statement
+            ResultSet resultSet = userID.executeQuery();
+            int memID;
+
+            // Check if anything returned
+            if (resultSet.next()) {
+                memID = resultSet.getInt("UserID");
+                boolean continueRunning = true;
+
+                while (continueRunning) {
+                    System.out.println("Available Options:");
+                    System.out.println("1. Health Metrics.");
+                    System.out.println("2. Fitness Achievements.");
+                    System.out.println("3. Routines.");
+                    System.out.println("4. Fitness Goals.");
+                    System.out.println("5. Go Back.");
+
+                    int select = scanner.nextInt();
+                    scanner.nextLine();
+
+                    switch (select) {
+                        case 1:
+                            PreparedStatement healthMetrics = connection.prepareStatement("SELECT Weight, Height, RecordDate FROM HealthMetrics " +
+                                    " WHERE MemberID = ?; ");
+                            healthMetrics.setInt(1, memID);
+
+                            // Execute SQL statement
+                            ResultSet healthResult = healthMetrics.executeQuery();
+
+                            while (healthResult.next()){
+                                System.out.println("Weight: "+ healthResult.getInt("Weight") + "kg");
+                                System.out.println("Height: "+ healthResult.getInt("Height") + "cm");
+                                System.out.println("Last Recorded: "+ healthResult.getDate("RecordDate"));
+                                System.out.println("------");
+                            }
+                            break;
+                        case 2:
+                            PreparedStatement fitnessAchievements = connection.prepareStatement("SELECT Description, DateAchieved FROM FitnessAchievement " +
+                                    " WHERE MemberID = ?; ");
+                            fitnessAchievements.setInt(1, memID);
+
+                            // Execute SQL statement
+                            ResultSet fitnessResult = fitnessAchievements.executeQuery();
+
+                            while (fitnessResult.next()){
+                                System.out.println("Description: "+ fitnessResult.getString("Description"));
+                                System.out.println("Date Achieved: "+ fitnessResult.getDate("DateAchieved"));
+                                System.out.println("------");
+                            }
+                            break;
+                        case 3:
+                            PreparedStatement routine = connection.prepareStatement("SELECT Category, Reps, Sets FROM Routine " +
+                                    " WHERE MemberID = ?; ");
+                            routine.setInt(1, memID);
+
+                            // Execute SQL statement
+                            ResultSet routineResult = routine.executeQuery();
+
+                            while (routineResult.next()){
+                                System.out.println("Category: "+ routineResult.getString("Category"));
+                                System.out.println("Reps: "+ routineResult.getInt("Reps"));
+                                System.out.println("Sets: "+ routineResult.getInt("Sets"));
+                                System.out.println("------");
+                            }
+                            break;
+                        case 4:
+                            PreparedStatement fitnessGoals = connection.prepareStatement("SELECT StartDate, EndDate, TargetWeight, Status FROM FitnessGoal " +
+                                    " WHERE MemberID = ?; ");
+                            fitnessGoals.setInt(1, memID);
+
+                            // Execute SQL statement
+                            ResultSet goalsResult = fitnessGoals.executeQuery();
+
+                            while (goalsResult.next()){
+                                System.out.println("Start Date: "+ goalsResult.getDate("StartDate"));
+                                System.out.println("End Date: "+ goalsResult.getDate("EndDate"));
+                                System.out.println("Target Weight: "+ goalsResult.getInt("TargetWeight"));
+                                System.out.println("Status: "+ goalsResult.getString("Status"));
+                                System.out.println("------");
+                            }
+                            break;
+                        case 5:
+                            continueRunning = false;
+                            break;
+                        default:
+                            System.out.println("Invalid option.");
+                    }
+                }
+            }
+
+        }
+        catch (SQLException e) {
+        System.out.println("SQL Exception: " + e.getMessage());
+        }
+    }
+
+    
+    
 }

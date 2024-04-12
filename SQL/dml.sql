@@ -52,7 +52,9 @@ VALUES (1,1),
 (2,1),
 (3,1),
 (1,2),
-(2,3);
+(2,2),
+(1,3),
+(3,3);
 
 -- Member health metrics
 INSERT INTO HealthMetrics(MemberID,Weight,Height,RecordDate)
@@ -99,18 +101,32 @@ VALUES (4,1),
 -- Schedules
 INSERT INTO Schedule(EntityID,EntityType,DayOfWeek)
 VALUES (3,'Room','Monday'),
+(2,'Room','Sunday'),
+(1,'Room','Saturday'),
 (7,'Trainer','Tuesday'),
+(8,'Trainer','Thursday'),
+(9,'Trainer','Friday'),
 (1,'Class','Monday'),
 (2,'Class','Tuesday'),
 (3,'Class','Wednesday'),
-(1,'Session','Thursday');
+(1,'Session','Wednesday'),
+(2,'Session','Thursday'),
+(3,'Session','Saturday');
 
 -- Admin to Schedule join table (Adminid, scheduleid)
 INSERT INTO Manageschedule
 VALUES (4,1),
 (5,2),
 (6,3),
-(4,4);
+(4,4),
+(5,5),
+(6,6),
+(4,7),
+(5,8),
+(6,9),
+(4,10),
+(5,11),
+(6,12);
 
 -- Time slot for schedule
 INSERT INTO TimeSlot(ScheduleID,StartTime,EndTime)
@@ -119,4 +135,10 @@ VALUES (1,'13:00','14:00'),
 (3,'8:00','9:00'),
 (4,'9:00','10:00'),
 (5,'13:00','14:00'),
-(6,'13:00','14:00');
+(6,'13:00','14:00'),
+(7,'13:00','14:00'),
+(8,'13:00','14:00'),
+(9,'8:00','9:00'),
+(10,'9:00','10:00'),
+(11,'13:00','14:00'),
+(12,'13:00','14:00');

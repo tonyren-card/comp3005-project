@@ -59,7 +59,8 @@ CREATE TABLE ClassRegistered (
 	MemberID INTEGER NOT NULL,
 	ClassID INTEGER NOT NULL,
 	CONSTRAINT fk_member FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
-	CONSTRAINT fk_class FOREIGN KEY (ClassID) REFERENCES FitnessClass(ClassID)
+	CONSTRAINT fk_class FOREIGN KEY (ClassID) REFERENCES FitnessClass(ClassID),
+	UNIQUE (MemberID, ClassID)
 );
 
 CREATE TYPE personal_training_status AS ENUM ('UPCOMING', 'FINISHED', 'CANCELED');
@@ -125,7 +126,8 @@ CREATE TABLE ManageSchedule (
 	AdminID INTEGER NOT NULL,
 	ScheduleID INTEGER NOT NULL,
 	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admins(AdminID),
-	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID)
+	CONSTRAINT fk_schedule FOREIGN KEY (ScheduleID) REFERENCES Schedule(ScheduleID),
+	UNIQUE (AdminID, ScheduleID)
 );
 
 CREATE TABLE TimeSlot (
@@ -147,5 +149,6 @@ CREATE TABLE EquipManaged (
 	AdminID INTEGER NOT NULL,
 	EquipID INTEGER NOT NULL,
 	CONSTRAINT fk_admin FOREIGN KEY (AdminID) REFERENCES Admins(AdminID),
-	CONSTRAINT fk_equip FOREIGN KEY (EquipID) REFERENCES Equipment(EquipmentID)
+	CONSTRAINT fk_equip FOREIGN KEY (EquipID) REFERENCES Equipment(EquipmentID),
+	UNIQUE (AdminID, EquipID)
 );

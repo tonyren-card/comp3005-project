@@ -10,6 +10,7 @@ public class DatabaseManager {
 
     private int dbAdminID = 0;
 
+    // Constructor
     public DatabaseManager() {
         try {
             // Connect to PostgreSQL server
@@ -25,6 +26,7 @@ public class DatabaseManager {
         }
     }
 
+    //Close connection once quit
     public void closeConnection() {
         try {
             if (connection != null)
@@ -34,6 +36,8 @@ public class DatabaseManager {
         }
     }
 
+
+    // FUNCTION MANAGERS
     public void memberFunctionManager() {
         try {
             Scanner scanner = new Scanner(System.in);
@@ -103,11 +107,13 @@ public class DatabaseManager {
 
                 String firstName = resultSet.getString("FirstName");
                 String lastName = resultSet.getString("LastName");
+                String title = resultSet.getString("Title");
                 String userEmail = resultSet.getString("Email");
 
                 System.out.println("User Info:");
                 System.out.println("First Name: " + firstName);
                 System.out.println("Last Name: " + lastName);
+                System.out.println("Title: " + title);
                 System.out.println("Email: " + userEmail);
                 System.out.println();
 
@@ -1379,7 +1385,7 @@ public class DatabaseManager {
                     System.out.print(resultSet.getString("Firstname") + "\t\t\t");
                     System.out.print(resultSet.getString("Lastname") + "\t\t\t");
                     System.out.print(resultSet.getDate("Billdate") + "\t\t");
-                    System.out.print("$" + resultSet.getInt("Amount") + "\t\t");
+                    System.out.print("$" + resultSet.getFloat("Amount") + "\t\t");
                     System.out.println(resultSet.getString("Status"));
                 }System.out.println();
 
@@ -1470,6 +1476,94 @@ public class DatabaseManager {
             System.out.println(e);
         }
     }
-    public void updateBillAmount(){}
-    public void updateBillStatus(){}
+
+    public void updateBillAmount(){
+        Scanner scanner = new Scanner(System.in);
+        int billID;
+        float newAmount;
+
+        //Step 1: get bill id
+        System.out.print("Enter the ID of the bill to update: ");
+        billID = scanner.nextInt();
+        scanner.nextLine();
+
+        //Step 2: enter new amount
+        System.out.print("Enter the amount to be paid (eg. 50.00): $");
+        newAmount = scanner.nextFloat();
+        scanner.nextLine();
+
+        //Step 3: prepare statements and run queries
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE Bill SET Amount=? WHERE BillID=?;");
+            preparedStatement.setFloat(1, newAmount);
+            preparedStatement.setInt(2, billID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully updated the bill entry.");
+            }else{
+                System.out.println("Failed to update the bill entry.");
+            }
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void updateBillStatus(){
+        Scanner scanner = new Scanner(System.in);
+        int billID;
+        String newStatus = "";
+
+        //Step 1: get bill id
+        System.out.print("Enter the ID of the bill to update: ");
+        billID = scanner.nextInt();
+        scanner.nextLine();
+
+        // Step 2: get input for bill status ('PENDING', 'PAID', 'CANCELED')
+        boolean isValid;
+        do {
+            System.out.println("Select the status of the bill (type a number): ");
+            System.out.println("\t1. Pending");
+            System.out.println("\t2. Paid");
+            System.out.println("\t3. Canceled");
+            int select = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (select) {
+                case 1:
+                    newStatus = "PENDING";
+                    isValid = true;
+                    break;
+                case 2:
+                    newStatus = "PAID";
+                    isValid = true;
+                    break;
+                case 3:
+                    newStatus = "CANCELED";
+                    isValid = true;
+                    break;
+                default:
+                    System.out.println("Invalid option.\n");
+                    isValid = false;
+            }
+        } while (!isValid);
+
+        //Step 3: prepare statements and run queries
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE Bill SET Status=?::bill_status WHERE BillID=?;");
+            preparedStatement.setString(1, newStatus);
+            preparedStatement.setInt(2, billID);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Successfully updated the bill entry.");
+            }else{
+                System.out.println("Failed to update the bill entry.");
+            }
+            preparedStatement.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
 }

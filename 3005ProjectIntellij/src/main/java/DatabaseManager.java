@@ -11,6 +11,7 @@ public class DatabaseManager {
     private String pw = "cs19DB22sql!";
     private Connection connection;
 
+    private int dbTrainerID = 0;
     private int dbAdminID = 0;
 
     // Constructor
@@ -69,7 +70,7 @@ public class DatabaseManager {
                         dashboardDisplay();
                         break;
                     case 4:
-                        scheduleManagement();
+                        memberScheduleManagement();
                         break;
                     case 5:
                         continueRunning = false;
@@ -77,76 +78,6 @@ public class DatabaseManager {
                     default:
                         System.out.println("Invalid option.");
                 }
-            }
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-    }
-
-    //TRAINER FUNCTION MANAGER
-    public void trainerFunctionManager(){
-        try {
-            Scanner scanner = new Scanner(System.in);
-
-            // Get trainer login
-            System.out.println("Enter the email:");
-            String email = scanner.nextLine();
-            System.out.println("Enter the password:");
-            String pw = scanner.nextLine();
-            System.out.println();
-
-            // Prepare SQL statement
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
-                    "FROM Trainers JOIN Users ON Trainers.TrainerID = Users.userid\n" +
-                    "WHERE Users.email = ? AND Users.password = ?;");
-            preparedStatement.setString(1, email);
-            preparedStatement.setString(2, pw);
-
-            // Execute SQL statement
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-
-            if (resultSet.next()) {
-                this.dbTrainerID = resultSet.getInt("TrainerID");
-
-                String firstName = resultSet.getString("FirstName");
-                String lastName = resultSet.getString("LastName");
-                String userEmail = resultSet.getString("Email");
-
-                System.out.println("User Info:");
-                System.out.println("First Name: " + firstName);
-                System.out.println("Last Name: " + lastName);
-                System.out.println("Email: " + userEmail);
-                System.out.println();
-
-                boolean continueRunning = true;
-
-                while (continueRunning) {
-                    System.out.println("Trainer management.");
-                    System.out.println("1. Availability Registration.");
-                    System.out.println("2. Member Search.");
-                    System.out.println("3. Exit.");
-
-                    int select = scanner.nextInt();
-                    scanner.nextLine();
-
-                    switch (select) {
-                        case 1:
-                            scheduleManagement();
-                            break;
-                        case 2:
-                            memberProfileSearch();
-                            break;
-                        case 3:
-                            continueRunning = false;
-                            break;
-                        default:
-                            System.out.println("Invalid option.");
-                    }
-                }
-            }
-            else{
-                System.out.println("invalid username or password");
             }
         } catch (Exception e) {
             System.out.println(e);
@@ -231,6 +162,77 @@ public class DatabaseManager {
             preparedStatement.close();
 
         } catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void trainerFunctionManager(){
+        try {
+            Scanner scanner = new Scanner(System.in);
+
+            // Get trainer login
+            System.out.println("Enter the email:");
+            String email = scanner.nextLine();
+            System.out.println("Enter the password:");
+            String pw = scanner.nextLine();
+            System.out.println();
+
+            // Prepare SQL statement
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT *\n" +
+                    "FROM Trainers JOIN Users ON Trainers.TrainerID = Users.userid\n" +
+                    "WHERE Users.email = ? AND Users.password = ?;");
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, pw);
+
+            // Execute SQL statement
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+
+            if (resultSet.next()) {
+                this.dbTrainerID = resultSet.getInt("TrainerID");
+
+                String firstName = resultSet.getString("FirstName");
+                String lastName = resultSet.getString("LastName");
+                String specialization = resultSet.getString("Specialization");
+                String userEmail = resultSet.getString("Email");
+
+                System.out.println("User Info:");
+                System.out.println("First Name: " + firstName);
+                System.out.println("Last Name: " + lastName);
+                System.out.println("Specialization: " + specialization);
+                System.out.println("Email: " + userEmail);
+                System.out.println();
+
+                boolean continueRunning = true;
+
+                while (continueRunning) {
+                    System.out.println("Trainer management.");
+                    System.out.println("1. Availability Registration.");
+                    System.out.println("2. Member Search.");
+                    System.out.println("3. Exit.");
+
+                    int select = scanner.nextInt();
+                    scanner.nextLine();
+
+                    switch (select) {
+                        case 1:
+                            trainerScheduleManagement();
+                            break;
+                        case 2:
+                            memberProfileSearch();
+                            break;
+                        case 3:
+                            continueRunning = false;
+                            break;
+                        default:
+                            System.out.println("Invalid option.");
+                    }
+                }
+            }
+            else{
+                System.out.println("invalid username or password");
+            }
+        } catch (Exception e) {
             System.out.println(e);
         }
     }
@@ -463,8 +465,6 @@ public class DatabaseManager {
             System.out.println("SQL Exception: " + e.getMessage());
         }
     }
-
-
 
     public void goalsUpdate(String email, String password) {
         Scanner scanner = new Scanner(System.in);
@@ -920,7 +920,7 @@ public class DatabaseManager {
         }
     }
 
-    public void scheduleManagement() {
+    public void memberScheduleManagement() {
         Scanner scanner = new Scanner(System.in);
         try {
 
@@ -1324,6 +1324,7 @@ public class DatabaseManager {
             System.out.println("SQL Exception: " + e.getMessage());
         }
     }
+
 
     // ADMIN FUNCTIONS
     // Room booking management manager and action functions
@@ -2341,8 +2342,9 @@ public class DatabaseManager {
         }
     }
 
+
     //TRAINER FUNCTIONS
-    public void scheduleManagement() {
+    public void trainerScheduleManagement() {
         //input requirements
         //date: first letter must be capitalized, ex: Monday
         //time: must be in HH:MM format, ex: 14:00
@@ -2368,7 +2370,7 @@ public class DatabaseManager {
 
             int rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected == 0) {
-                System.out.println("Failed to update the class date entry.");
+                System.out.println("Failed to update the trainer schedule entry.");
                 preparedStatement.close();
                 return;
             }
@@ -2392,10 +2394,11 @@ public class DatabaseManager {
 
             rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected == 0) {
-                System.out.println("Failed to update the class date entry.");
-                preparedStatement.close();
-                return;
+                System.out.println("Failed to update the trainer schedule entry.");
+            } else {
+                System.out.println("Successfully updated the trainer schedule entry.");
             }
+            preparedStatement.close();
 
         }
         catch (SQLException e) {
@@ -2507,14 +2510,13 @@ public class DatabaseManager {
                             System.out.println("Invalid option.");
                     }
                 }
+            }else{
+                System.out.println("No records found. ");
             }
 
         }
         catch (SQLException e) {
-        System.out.println("SQL Exception: " + e.getMessage());
+            System.out.println("SQL Exception: " + e.getMessage());
         }
     }
-
-    
-    
 }

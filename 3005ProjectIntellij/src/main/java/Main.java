@@ -21,6 +21,9 @@ public class Main {
                 case 1:
                     dbManager.memberFunctionManager();
                     break;
+                case 2:
+                    dbManager.trainerFunctionManager();
+                    break;
                 case 3:
                     dbManager.adminFunctionManager();
                     break;

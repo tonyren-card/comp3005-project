@@ -5,6 +5,8 @@
   - Matthew Parsons
   - Charles Yan
 
+Please note that one member left our group and we found a replacement
+
 Application type: Command line interface
 
 Language: Java (Intellij IDEA)

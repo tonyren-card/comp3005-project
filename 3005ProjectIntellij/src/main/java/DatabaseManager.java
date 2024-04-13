@@ -776,9 +776,7 @@ public class DatabaseManager {
 
                     int select = scanner.nextInt();
                     scanner.nextLine();
-
-                    //TODO: add pause and require user input before redisplaying menu options
-
+                    
                     switch (select) {
                         case 1:
                             routineDisplay(email, password);

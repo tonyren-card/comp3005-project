@@ -8,7 +8,7 @@ public class DatabaseManager {
     // USER CREDENTIALS
     private String url = "jdbc:postgresql://localhost:5432/Fitness";
     private String user = "postgres";
-    private String pw = "cs19DB22sql!";
+    private String pw = "matthew1";
     private Connection connection;
 
     private int dbTrainerID = 0;
@@ -2454,6 +2454,7 @@ public class DatabaseManager {
                             ResultSet healthResult = healthMetrics.executeQuery();
 
                             while (healthResult.next()){
+                                System.out.println("Health Metrics");
                                 System.out.println("Weight: "+ healthResult.getInt("Weight") + "kg");
                                 System.out.println("Height: "+ healthResult.getInt("Height") + "cm");
                                 System.out.println("Last Recorded: "+ healthResult.getDate("RecordDate"));
@@ -2469,6 +2470,7 @@ public class DatabaseManager {
                             ResultSet fitnessResult = fitnessAchievements.executeQuery();
 
                             while (fitnessResult.next()){
+                                System.out.println("Fitness Achievements");
                                 System.out.println("Description: "+ fitnessResult.getString("Description"));
                                 System.out.println("Date Achieved: "+ fitnessResult.getDate("DateAchieved"));
                                 System.out.println("------");
@@ -2483,6 +2485,7 @@ public class DatabaseManager {
                             ResultSet routineResult = routine.executeQuery();
 
                             while (routineResult.next()){
+                                System.out.println("Routine");
                                 System.out.println("Category: "+ routineResult.getString("Category"));
                                 System.out.println("Reps: "+ routineResult.getInt("Reps"));
                                 System.out.println("Sets: "+ routineResult.getInt("Sets"));
@@ -2498,6 +2501,7 @@ public class DatabaseManager {
                             ResultSet goalsResult = fitnessGoals.executeQuery();
 
                             while (goalsResult.next()){
+                                System.out.println("Fitness Goals");
                                 System.out.println("Start Date: "+ goalsResult.getDate("StartDate"));
                                 System.out.println("End Date: "+ goalsResult.getDate("EndDate"));
                                 System.out.println("Target Weight: "+ goalsResult.getInt("TargetWeight"));

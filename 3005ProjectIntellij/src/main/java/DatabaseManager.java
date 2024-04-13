@@ -1230,8 +1230,10 @@ public class DatabaseManager {
 
             preparedStatement = connection.prepareStatement("UPDATE Schedule SET EntityID = ?,EntityType = ?::entity_type WHERE ScheduleID = ?");
             preparedStatement.setInt(1, userId);
-            preparedStatement.setString(3, "Session");
+            preparedStatement.setString(2, "Session");
             preparedStatement.setInt(3, registerId);
+
+            preparedStatement.executeUpdate();
 
         } catch (SQLException e) {
             System.out.println("SQL Exception: " + e.getMessage());

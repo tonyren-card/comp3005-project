@@ -266,7 +266,7 @@ public class DatabaseManager {
                 scanner.next();
             }
             int month = scanner.nextInt();
-            scanner.nextLine(); // Consume the newline
+            scanner.nextLine();
 
             System.out.println("Enter day.");
             while (!scanner.hasNextInt()) {
@@ -587,13 +587,20 @@ public class DatabaseManager {
                 }
 
                 System.out.println("Which goal would you like to update?:");
+                System.out.println("Enter 0 to exit.");
                 int updateId = scanner.nextInt();
                 scanner.nextLine();
+                if (updateId == 0) {
+                    return;
+                }
 
                 while (!goalIds.contains(updateId)) {
                     System.out.println("Please enter a valid goal ID:");
                     updateId = scanner.nextInt();
                     scanner.nextLine();
+                    if (updateId == 0) {
+                        return;
+                    }
                 }
 
                 System.out.println("What would you like to do?");
@@ -904,7 +911,7 @@ public class DatabaseManager {
 
                     System.out.println("Weight: " + weight);
                     System.out.println("Height: " + height);
-                    System.out.println("Date Achieved: " + date);
+                    System.out.println("Date Submitted: " + date);
                 }
 
             } else {

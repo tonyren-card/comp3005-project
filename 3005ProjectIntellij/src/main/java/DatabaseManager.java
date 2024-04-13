@@ -8,7 +8,7 @@ public class DatabaseManager {
     // USER CREDENTIALS
     private String url = "jdbc:postgresql://localhost:5432/Fitness";
     private String user = "postgres";
-    private String pw = "matthew1";
+    private String pw = "cs19DB22sql!";
     private Connection connection;
 
     private int dbTrainerID = 0;
@@ -2203,7 +2203,7 @@ public class DatabaseManager {
         Scanner scanner = new Scanner(System.in);
         int memID;
         String billDate;
-        int amount;
+        float amount;
 
         //Step 2: list members names' and get input for a member id
         try {
@@ -2228,7 +2228,7 @@ public class DatabaseManager {
         System.out.print("Enter the date for the bill, in format 'YYYY-MM-DD': ");
         billDate = scanner.nextLine();
         System.out.print("Enter the amount to be paid: ");
-        amount = scanner.nextInt();
+        amount = scanner.nextFloat();
         scanner.nextLine();
 
         //Step 4: prepare insert queries and execute
@@ -2239,7 +2239,7 @@ public class DatabaseManager {
             preparedStatement.setInt(1, memID);
             preparedStatement.setInt(2, this.dbAdminID);
             preparedStatement.setDate(3, Date.valueOf(billDate));
-            preparedStatement.setInt(4, amount);
+            preparedStatement.setFloat(4, amount);
 
             int rowsAffected = preparedStatement.executeUpdate();
 
